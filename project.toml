@@ -1,0 +1,18 @@
+[project]
+name = "statistican"
+version = "0.0.1"
+authors = [
+  { name="Marco Zausch", email="marcoz@posteo.de" },
+]
+description = "Package simplifying Statistical tests"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/MacoZu/statistican"
+Issues = "https://github.com/MacoZu/statistican/issues"
