@@ -4,10 +4,74 @@ import numpy as np
 import pandas as pd
 import scipy.stats as st
 
+import re
+import warnings
 
+def clean_to_numeric_array(data):
+    """
+    Cleans up any data format (list, Series, set, generator) and returns a NumPy array
+    of floats or integers. Handles common issues like missing values, invalid strings,
+    whitespace, and other non-numeric data.
+
+    Args:
+        data (list, Series, set, generator): Input data that needs to be cleaned.
+
+    Returns:
+        np.ndarray: A cleaned NumPy array of numeric data (float or int).
+    """
+    # Convert data to an iterable list
+    if isinstance(data, (pd.Series, list, set, tuple, np.ndarray)):
+        data = list(data)
+    elif hasattr(data, '__iter__'):
+        data = list(data)
+    else:
+        raise ValueError("Unsupported data type. Provide list, Series, set, or generator.")
+
+    # Helper function to clean individual values
+    def clean_value(val):
+        if pd.isna(val):  # Handle missing values (NaN, None)
+            return np.nan
+        
+        if isinstance(val, str):
+            # Remove extra whitespace
+            val = val.strip()
+            
+            # Remove commas from numbers (e.g., "1,000" -> "1000")
+            val = val.replace(',', '')
+
+            # Remove any currency symbols or percentage signs
+            val = re.sub(r'[^\d\.\-]', '', val)
+
+            # Handle empty strings after cleaning
+            if val == '':
+                return np.nan
+
+        # Attempt to convert cleaned value to a float
+        try:
+            return float(val)
+        except ValueError:
+            return np.nan  # Return NaN for any invalid conversions
+
+    # Apply cleaning to the entire data array
+    cleaned_data = np.array([clean_value(x) for x in data], dtype=float)
+
+    # Optional: Filter out NaNs if desired (uncomment below to enable)
+    cleaned_data = cleaned_data[~np.isnan(cleaned_data)]
+
+    return cleaned_data 
+    
+    
 def confidence_interval(data, confidence=0.95, pop_std=None):
     """
-    Calculates the confidence interval for the population mean.
+    Calculates the confidence interval (CI) for the population mean.
+    
+    A CI for the population mean provides a range within which the true population mean 
+    is likely to lie, based on a sample. 
+    
+    You provide a confidence, that you want to have in saying the true mean lies within that interval. 
+    And the CI represets the range of values that contain the true mean with that confidence.
+    The more confident you want to be the wider becomes the CI to make sure the true mean lies within it.
+    
     - Uses t-distribution for n<=30
     - Uses Normal distribution for n>30
     - If populations standard deviation is provided the 
@@ -21,34 +85,51 @@ def confidence_interval(data, confidence=0.95, pop_std=None):
     Returns:
         tuple: Lower and upper bounds of the confidence interval.
     """
+    data = clean_to_numeric_array(data)
     n = len(data)
     mean = np.mean(data)
 
     # uses t-distribution for less than 30 observations
     if not pop_std and n <= 30:
-        return st.t.interval(confidence, df=n - 1, loc=mean, scale=st.sem(data)) 
-
+        conf_interval = st.t.interval(confidence, df=n - 1, loc=mean, scale=st.sem(data))
+        
     # normal-dist for n>30
-    if not pop_std and n > 30:
-        return st.norm.interval(confidence, loc=mean, scale=st.sem(data))
-
+    elif not pop_std and n > 30:
+        conf_interval = st.norm.interval(confidence, loc=mean, scale=st.sem(data))
+        
     # if population standard deviation is provided 
     # normal-dist is used & standard error of the mean is calculated with pop_std.
-    sem = pop_std / np.sqrt(n)
-    return st.norm.interval(confidence, loc=mean, scale=sem)
-
-
-def ci_variance(data, confidence):
+    else:
+        sem = pop_std / np.sqrt(n)
+        conf_interval = st.norm.interval(confidence, loc=mean, scale=sem)
+        
+    # Convert np.float64 to plain Python float
+    return f"{confidence*100}% CI interval for population mean:", (float(conf_interval[0]), float(conf_interval[1]))
+    
+    
+def ci_variance(data, confidence=0.95):
     """
-    Calculate the confidence interval for the population variance.
+    Calculate the confidence interval (CI) for the population variance.
+    
+    The CI for population variance provides a range of values within which the true population variance is likely to lie, based on a sample. 
+    Variance measures how spread out the data points are in the population.
 
     Args:
-        data (array-like): The sample data.
-        confidence (float): The desired confidence level (e.g., 0.95 for 95% confidence).
+        data (array-like): The sample data for which to compute the confidence interval.
+        confidence (float): The confidence level for the interval (e.g., 0.95 for 95% confidence).
 
     Returns:
-        tuple: A tuple containing the lower and upper bounds of the confidence interval.
+        tuple: A tuple containing the lower and upper bounds of the confidence interval for the variance.
+    
+    Explanation:
+        - The sample variance is calculated using Bessel's correction (ddof=1).
+        - The confidence interval is computed using the chi-square distribution, which is appropriate for variance estimates.
+        - The lower and upper bounds are based on the critical values from the chi-square distribution.
+        
+    Example:
+        If `data` is a list of values and `confidence=0.95`, the function returns the 95% confidence interval for the variance.
     """
+    data = clean_to_numeric_array(data)
     n = len(data)
     var = np.var(data, ddof=1)  # sample variance with Bessel's correction
     chi2_lower = st.chi2.ppf((1 - confidence) / 2, df=n - 1)  # (1 - 0.95)/2 = 0.025
@@ -57,12 +138,12 @@ def ci_variance(data, confidence):
     )  # (1 + 0.95)/2 = 0.5 + 0.475 = 0.975
     lower = (n - 1) * var / chi2_upper
     upper = (n - 1) * var / chi2_lower
-    return lower, upper
-
+    return f"{confidence*100}% CI for population variance:", (float(lower), float(upper))
 
 def ci_for_pop_proportion(p, n, confidence):
     """
     Calculate the confidence interval for a population proportion.
+    
 
     Args:
         p (float): Sample proportion.
@@ -81,7 +162,7 @@ def ci_for_pop_proportion(p, n, confidence):
     lower_bound = p - z * standard_error
     upper_bound = p + z * standard_error
 
-    return lower_bound, upper_bound
+    return f" {confidence*100}% CI for population proportion", (float(lower_bound), float(upper_bound))
 
 
 def sample_size_for_pop_mean_ci(confidence, moe, pop_std):
@@ -332,6 +413,7 @@ def homo_variance_test(group1, group2, alpha=0.05):
 
     df_result = pd.DataFrame(d)
     return df_result
+
 
 def cut_outliers(df, col, method='q'):
     """Removes outliers from a DataFrame based on a specified column.
