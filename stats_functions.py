@@ -1,5 +1,3 @@
-import math
-
 import numpy as np
 import pandas as pd
 import scipy.stats as st
@@ -7,58 +5,67 @@ import scipy.stats as st
 import re
 import warnings
 
+
 def clean_to_numeric_array(data):
     """
-    Cleans up any data format (list, Series, set, generator) and returns a NumPy array
-    of floats or integers. Handles common issues like missing values, invalid strings,
-    whitespace, and other non-numeric data.
+    Cleans input data to return a NumPy array of floats or integers. Handles
+    various dirty data issues like missing values, invalid strings, whitespace,
+    currency symbols, percentage signs, and more.
 
     Args:
-        data (list, Series, set, generator): Input data that needs to be cleaned.
+        data (list, Series, set, generator): Input data to be cleaned.
 
     Returns:
         np.ndarray: A cleaned NumPy array of numeric data (float or int).
     """
-    # Convert data to an iterable list
     if isinstance(data, (pd.Series, list, set, tuple, np.ndarray)):
-        data = list(data)
+        data = np.array(data)
     elif hasattr(data, '__iter__'):
-        data = list(data)
+        data = np.array(list(data))
     else:
         raise ValueError("Unsupported data type. Provide list, Series, set, or generator.")
+    
+    # Define a vectorized clean function
+    def clean_value_vectorized(values):
+        # Initialize a mask for NaN
+        cleaned_values = np.empty(values.shape, dtype=object)
+        cleaned_values[:] = np.nan  # Default all to NaN
 
-    # Helper function to clean individual values
-    def clean_value(val):
-        if pd.isna(val):  # Handle missing values (NaN, None)
-            return np.nan
-        
-        if isinstance(val, str):
-            # Remove extra whitespace
-            val = val.strip()
+        # Regex patterns to clean the data
+        numeric_pattern = re.compile(r'^-?\d+(\.\d+)?$')  # Matches valid integers and floats
+        special_characters_pattern = re.compile(r'[^\d\.\-]')
+
+        for i, val in enumerate(values):
+            if pd.isna(val):  # Handle missing values directly
+                continue
             
-            # Remove commas from numbers (e.g., "1,000" -> "1000")
-            val = val.replace(',', '')
+            if isinstance(val, str):
+                # Clean the string
+                val = val.strip()
+                val = val.replace(',', '')  # Remove commas
+                
+                # Remove unwanted characters
+                val = special_characters_pattern.sub('', val)
+                
+                # If the cleaned string is empty, remains NaN
+                if val == '':
+                    continue
+            
+            try:
+                # Attempt to convert to float
+                cleaned_values[i] = float(val)
+            except ValueError:
+                cleaned_values[i] = np.nan  # Invalid conversion
 
-            # Remove any currency symbols or percentage signs
-            val = re.sub(r'[^\d\.\-]', '', val)
+        return cleaned_values
 
-            # Handle empty strings after cleaning
-            if val == '':
-                return np.nan
+    # Clean the data and convert to a NumPy array
+    cleaned_data = clean_value_vectorized(data)
 
-        # Attempt to convert cleaned value to a float
-        try:
-            return float(val)
-        except ValueError:
-            return np.nan  # Return NaN for any invalid conversions
+    # Optionally filter out NaNs
+    cleaned_data = cleaned_data[~pd.isna(cleaned_data)]
 
-    # Apply cleaning to the entire data array
-    cleaned_data = np.array([clean_value(x) for x in data], dtype=float)
-
-    # Optional: Filter out NaNs if desired (uncomment below to enable)
-    cleaned_data = cleaned_data[~np.isnan(cleaned_data)]
-
-    return cleaned_data 
+    return cleaned_data.astype(float)  # Ensure output is float type
     
     
 def confidence_interval(data, confidence=0.95, pop_std=None):
