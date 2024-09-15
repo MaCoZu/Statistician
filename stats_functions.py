@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import pandas as pd
 import scipy.stats as st
@@ -150,11 +151,12 @@ def ci_variance(data, confidence=0.95):
 def ci_for_pop_proportion(p, n, confidence):
     """
     Calculate the confidence interval for a population proportion.
-    
+    The true proportion of successes lies within an interval that spans 
+    from 
 
     Args:
-        p (float): Sample proportion.
-        n (int): Sample size.
+        p (float): Estimated proportion of successes.
+        n (int): Size of the sample.
         confidence (float): Desired confidence level (e.g., 0.95 for 95% confidence).
 
     Returns:
