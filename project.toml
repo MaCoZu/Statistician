@@ -1,6 +1,6 @@
 [project]
-name = "statistican"
-version = "0.0.1"
+name = "statistician"
+version = "0.1.0"
 authors = [
   { name="Marco Zausch", email="marcoz@posteo.de" },
 ]
@@ -14,5 +14,5 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/MacoZu/statistican"
-Issues = "https://github.com/MacoZu/statistican/issues"
+Homepage = "https://github.com/MaCoZu/statistician"
+Issues = "https://github.com/MaCoZu/statistician/issues"
