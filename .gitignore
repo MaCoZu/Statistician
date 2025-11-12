@@ -2,7 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+*.md
 # C extensions
 *.so
 
@@ -26,6 +26,10 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+# Build artifacts
+*.whl
+*.tar.gz
 
 # PyInstaller
 *.manifest
@@ -67,6 +71,15 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+statistician/bin/
+statistician/include/
+statistician/lib/
+statistician/lib64/
+statistician/pyvenv.cfg
+statistician/share/
+
+# Development notes (temporary documentation)
+.dev-notes/
 
 # Spyder project settings
 .spyderproject
@@ -85,3 +98,23 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# IDE
+.vscode/
+.zed/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+
+# Distribution testing
+test-pypi/

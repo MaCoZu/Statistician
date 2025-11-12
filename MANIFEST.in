@@ -1,4 +1,24 @@
 include README.md
 include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
 include requirements.txt
-recursive-include statistician *.py
+include requirements-dev.txt
+include pyproject.toml
+include setup.cfg
+recursive-include statistician *.py py.typed
+recursive-exclude statistician/bin *
+recursive-exclude statistician/include *
+recursive-exclude statistician/lib *
+recursive-exclude statistician/lib64 *
+exclude statistician/pyvenv.cfg
+recursive-include tests *.py
+exclude .gitignore
+exclude .coveragerc
+prune .github
+prune docs/_build
+prune htmlcov
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude *.so
+global-exclude .DS_Store

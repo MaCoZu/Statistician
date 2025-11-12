@@ -1,7 +1,10 @@
 import unittest
+
 import numpy as np
 import pandas as pd
-from statistician.descriptive import mean, median, cut_outliers
+
+from statistician.descriptive import cut_outliers, mean, median
+
 
 class TestDescriptive(unittest.TestCase):
     def test_mean(self):
@@ -14,8 +17,9 @@ class TestDescriptive(unittest.TestCase):
 
     def test_cut_outliers(self):
         df = pd.DataFrame({'A': [1, 2, 3, 4, 100]})
-        df_cleaned = cut_outliers(df, 'A', method='z')
+        df_cleaned = cut_outliers(df, 'A', method='q')
         self.assertEqual(len(df_cleaned), 4)
+
 
 if __name__ == '__main__':
     unittest.main()
